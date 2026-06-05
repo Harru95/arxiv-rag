@@ -1,0 +1,58 @@
+{
+  "paper": "arxiv.org/abs/1706.03762",
+  "k": 5,
+  "mean_precision_at_5": 0.68,
+  "mrr": 0.787,
+  "per_question": [
+    {
+      "question": "What is scaled dot-product attention?",
+      "precision_at_5": 0.8,
+      "reciprocal_rank": 1.0
+    },
+    {
+      "question": "What is multi-head attention?",
+      "precision_at_5": 0.4,
+      "reciprocal_rank": 0.333
+    },
+    {
+      "question": "What is the base model configuration?",
+      "precision_at_5": 0.8,
+      "reciprocal_rank": 1.0
+    },
+    {
+      "question": "What are the encoder and decoder components?",
+      "precision_at_5": 1.0,
+      "reciprocal_rank": 1.0
+    },
+    {
+      "question": "What is positional encoding?",
+      "precision_at_5": 0.2,
+      "reciprocal_rank": 0.333
+    },
+    {
+      "question": "What datasets were used for training?",
+      "precision_at_5": 0.4,
+      "reciprocal_rank": 1.0
+    },
+    {
+      "question": "What is the BLEU score achieved?",
+      "precision_at_5": 1.0,
+      "reciprocal_rank": 1.0
+    },
+    {
+      "question": "What is feed-forward network in transformer?",
+      "precision_at_5": 0.2,
+      "reciprocal_rank": 0.2
+    },
+    {
+      "question": "How does the model handle variable length sequences?",
+      "precision_at_5": 1.0,
+      "reciprocal_rank": 1.0
+    },
+    {
+      "question": "What is dropout used for in the model?",
+      "precision_at_5": 1.0,
+      "reciprocal_rank": 1.0
+    }
+  ]
+}

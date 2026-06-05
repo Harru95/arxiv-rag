@@ -15,12 +15,13 @@ templates=Jinja2Templates(directory="templates")
 # Load existing index from disk if available
 if os.path.exists("faiss_store"):
     try:
-        index_store = {"index": load_index()}
+        index,chunks=load_index()
+        index_store = {"index": index,"chunks":chunks}
         print("Loaded existing index from disk")
     except:
-        index_store = {"index": None}
+        index_store = {"index": None,"chunks":[]}
 else:
-    index_store = {"index": None}
+    index_store = {"index": None,"chunks":[]}
 
 #req/res models
 
@@ -42,9 +43,10 @@ def home(request:Request):
 def create_index(data:IndexRequest):
     """Recieve URLs,build FAISS,store in memory"""
     try:
-        index=build_index(data.urls)
-        save_index(index)
+        index,chunks=build_index(data.urls)
+        save_index(index,chunks)
         index_store["index"] = index
+        index_store["chunks"]=chunks
         return {"message":f"Successfully indexed {len(data.urls)} paper(s)"}
     except Exception as e:
         raise HTTPException(status_code=500,detail=str(e))
@@ -59,7 +61,7 @@ def  answer_question(data:QueryRequest):
         )
     try:
         return StreamingResponse(
-            query_stream(index_store["index"],data.question),
+            query_stream(index_store["index"],index_store["chunks"],data.question),
             media_type="text/plain"
         )
     except Exception as e:
