@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>Research Paper Q&A</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #0f1117;
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #ffffff;
+        }
+
+        .subtitle {
+            color: #888;
+            font-size: 0.9rem;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: #1a1d27;
+            border: 1px solid #2a2d3a;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .card h2 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #a0a8c0;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        textarea {
+            width: 100%;
+            background: #0f1117;
+            border: 1px solid #2a2d3a;
+            border-radius: 8px;
+            color: #e0e0e0;
+            font-size: 0.9rem;
+            padding: 12px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #4f6ef7
+        }
+
+        input[type="text"] {
+            width: 100%;
+            background: #0f1117;
+            border: 1px solid #2a2d3a;
+            border-radius: 8px;
+            color: #e0e0e0;
+            font-size: 0.9rem;
+            padding: 12px;
+            font-family: inherit;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #4f6ef7;
+        }
+
+        button {
+            margin-top: 12px;
+            padding: 10px 24px;
+            background: #4f6ef7;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        button:hover {
+            background: #3d5ce0;
+        }
+
+        button:disabled {
+            background: #2a2d3a;
+            color: #555;
+            cursor: not-allowed;
+        }
+
+        .status {
+            margin-top: 12px;
+            font-size: 0.85rem;
+            min-height: 20px;
+        }
+
+        .status.success {
+            color: #4caf82;
+        }
+
+        .status.error {
+            color: #f76f6f;
+        }
+
+        .status.loading {
+            color: #888;
+        }
+
+        .answer-box {
+            background: #0f1117;
+            border: 1px solid #2a2d3a;
+            border-radius: 8px;
+            padding: 16px;
+            font-size: 0.9rem;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            min-height: 80px;
+            color: #e0e0e0;
+        }
+
+        .sources {
+            margin-top: 16px;
+        }
+
+        .sources h3 {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .source-tag {
+            display: inline-block;
+            background: #1a2744;
+            border: 1px solid #2a3d6a;
+            color: #6a9fd8;
+            font-size: 0.78rem;
+            padding: 4px 10px;
+            border-radius: 20px;
+            margin: 3px 3px 3px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Research Paper Q&A</h1>
+        <p class="subtitle">Paste ArXiv URLs,index the papers,then ask questions with cited answers.</p>
+        <!--step 1:index papers-->
+        <div class="card">
+            <h2>Step 1 — Index Papers</h2>
+            <textarea id="urlInput" rows="4"
+                placeholder="Paste ArXiv URLs here, one per line:&#10;https://arxiv.org/abs/1706.03762&#10;https://arxiv.org/abs/2005.11401"></textarea>
+            <button id="indexBtn" onclick="indexPapers()">Index Papers</button>
+            <div id="indexStatus" class="status"></div>
+        </div>
+        <!-- Step 2: Ask Question -->
+        <div class="card">
+            <h2>Step 2 — Ask a Question</h2>
+            <input type="text" id="questionInput"
+                placeholder="e.g. What attention mechanism is used in the transformer?" />
+            <button id="queryBtn" onclick="askQuestion()" disabled>Ask</button>
+            <div id="queryStatus" class="status"></div>
+
+            <div style="margin-top: 20px;">
+                <div id="answerBox" class="answer-box" style="display:none"></div>
+                <div id="sourcesBox" class="sources" style="display:none"></div>
+            </div>
+        </div>
+    </div>
+    <script>
+        async function indexPapers() {
+            const raw = document.getElementById('urlInput').value.trim();
+            if (!raw) return;
+
+            const urls = raw.split('\n').map(u => u.trim()).filter(u => u);
+            const btn = document.getElementById('indexBtn');
+            const status = document.getElementById('indexStatus');
+
+            btn.disabled = true;
+            btn.textContent = 'Indexing...';
+            status.className = 'status loading';
+            status.textContent = 'Downloading and indexing papers — this may take 30-60 seconds...';
+
+            try {
+                const res = await fetch('/index', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ urls })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    status.className = 'status success';
+                    status.textContent = '✓ ' + data.message;
+                    document.getElementById('queryBtn').disabled = false;
+                } else {
+                    status.className = 'status error';
+                    status.textContent = '✗ ' + data.detail;
+                }
+            } catch (e) {
+                status.className = 'status error';
+                status.textContent = '✗ Connection error: ' + e.message;
+            }
+
+            btn.disabled = false;
+            btn.textContent = 'Index Papers';
+        }
+
+        async function askQuestion() {
+            const question = document.getElementById('questionInput').value.trim();
+            if (!question) return;
+
+            const btn = document.getElementById('queryBtn');
+            const status = document.getElementById('queryStatus');
+            const answerBox = document.getElementById('answerBox');
+            const sourcesBox = document.getElementById('sourcesBox');
+
+            btn.disabled = true;
+            btn.textContent = 'Thinking...';
+            status.className = 'status loading';
+            status.textContent = 'Retrieving relevant chunks and generating answer...';
+            answerBox.style.display = 'none';
+            sourcesBox.style.display = 'none';
+
+            try {
+                const res = await fetch('/query', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    status.className = 'status success';
+                    status.textContent = '✓ Answer generated';
+
+                    answerBox.textContent = data.answer;
+                    answerBox.style.display = 'block';
+
+                    if (data.sources && data.sources.length > 0) {
+                        sourcesBox.innerHTML = '<h3>Sources</h3>' +
+                            data.sources.map(s => `<span class="source-tag">${s}</span>`).join('');
+                        sourcesBox.style.display = 'block';
+                    }
+                } else {
+                    status.className = 'status error';
+                    status.textContent = '✗ ' + data.detail;
+                }
+            } catch (e) {
+                status.className = 'status error';
+                status.textContent = '✗ Connection error: ' + e.message;
+            }
+
+            btn.disabled = false;
+            btn.textContent = 'Ask';
+        }
+    </script>
+</body>
+
+</html>
