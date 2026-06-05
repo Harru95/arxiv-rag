@@ -4,14 +4,22 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.requests import Request
 from pydantic import BaseModel
-from rag import build_index,query
+from rag import build_index, query, save_index, load_index
 
 app=FastAPI()
 
 app.mount("/static",StaticFiles(directory="static"),name="static")
 templates=Jinja2Templates(directory="templates")
 
-index_store={"index":None}
+# Load existing index from disk if available
+if os.path.exists("faiss_store"):
+    try:
+        index_store = {"index": load_index()}
+        print("Loaded existing index from disk")
+    except:
+        index_store = {"index": None}
+else:
+    index_store = {"index": None}
 
 #req/res models
 
@@ -33,7 +41,9 @@ def home(request:Request):
 def create_index(data:IndexRequest):
     """Recieve URLs,build FAISS,store in memory"""
     try:
-        index_store["index"]=build_index(data.urls)
+        index=build_index(data.urls)
+        save_index(index)
+        index_store["index"] = index
         return {"message":f"Successfully indexed {len(data.urls)} paper(s)"}
     except Exception as e:
         raise HTTPException(status_code=500,detail=str(e))

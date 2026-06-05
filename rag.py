@@ -68,6 +68,15 @@ def build_index(urls:list[str])-> FAISS:
     index=FAISS.from_documents(all_chunks,embeddings)
     return index
 
+def save_index(index:FAISS,path:str="faiss_store"):
+    index.save_local(path)
+    print(f"Index saved to {path}/")
+
+def load_index(path: str = "faiss_store") -> FAISS:
+    if not os.path.exists(path):
+        return None
+    return FAISS.load_local(path, embeddings, allow_dangerous_deserialization=True)
+
 def query(index:FAISS,question:str,k:int=5)->dict:
     retriever=index.as_retriever(search_kwargs={"k":k})
     relevant_chunks=retriever.invoke(question)

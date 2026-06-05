@@ -182,7 +182,7 @@
             <h2>Step 2 — Ask a Question</h2>
             <input type="text" id="questionInput"
                 placeholder="e.g. What attention mechanism is used in the transformer?" />
-            <button id="queryBtn" onclick="askQuestion()" disabled>Ask</button>
+            <button id="queryBtn" onclick="askQuestion()">Ask</button>
             <div id="queryStatus" class="status"></div>
 
             <div style="margin-top: 20px;">
@@ -216,7 +216,6 @@
                 if (res.ok) {
                     status.className = 'status success';
                     status.textContent = '✓ ' + data.message;
-                    document.getElementById('queryBtn').disabled = false;
                 } else {
                     status.className = 'status error';
                     status.textContent = '✗ ' + data.detail;
