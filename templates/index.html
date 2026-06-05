@@ -241,8 +241,9 @@
             btn.disabled = true;
             btn.textContent = 'Thinking...';
             status.className = 'status loading';
-            status.textContent = 'Retrieving relevant chunks and generating answer...';
-            answerBox.style.display = 'none';
+            status.textContent = 'Generating answer...';
+            answerBox.textContent = '';
+            answerBox.style.display = 'block';
             sourcesBox.style.display = 'none';
 
             try {
@@ -251,25 +252,55 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ question })
                 });
-                const data = await res.json();
 
-                if (res.ok) {
-                    status.className = 'status success';
-                    status.textContent = '✓ Answer generated';
-
-                    answerBox.textContent = data.answer;
-                    answerBox.style.display = 'block';
-
-                    if (data.sources && data.sources.length > 0) {
-                        sourcesBox.innerHTML = '<h3>Sources</h3>' +
-                            data.sources.map(s => `<span class="source-tag">${s}</span>`).join('');
-                        sourcesBox.style.display = 'block';
-                    }
-                } else {
+                if (!res.ok) {
+                    const data = await res.json();
                     status.className = 'status error';
                     status.textContent = '✗ ' + data.detail;
+                    answerBox.style.display = 'none';
+                    btn.disabled = false;
+                    btn.textContent = 'Ask';
+                    return;
                 }
-            } catch (e) {
+
+                // Read stream chunk by chunk
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder();
+                let fullText = '';
+
+                status.className = 'status success';
+                status.textContent = '✓ Generating...';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value, { stream: true });
+                    
+                    // Check if this chunk contains sources marker
+                    if (chunk.includes('__SOURCES__')) {
+                        const parts = chunk.split('__SOURCES__');
+                        fullText += parts[0];
+                        answerBox.textContent = fullText;
+                        
+                        // Parse and display sources
+                        try {
+                            const sources = JSON.parse(parts[1]);
+                            if (sources.length > 0) {
+                                sourcesBox.innerHTML = '<h3>Sources</h3>' +
+                                    sources.map(s => `<span class="source-tag">${s}</span>`).join('');
+                                sourcesBox.style.display = 'block';
+                            }
+                        } catch(e) {}
+                    } else {
+                        fullText += chunk;
+                        answerBox.textContent = fullText;
+                    }
+                }
+
+                status.textContent = '✓ Answer generated';
+
+            } catch(e) {
                 status.className = 'status error';
                 status.textContent = '✗ Connection error: ' + e.message;
             }

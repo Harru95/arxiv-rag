@@ -8,6 +8,7 @@ from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_groq import ChatGroq
 from langchain_core.documents import Document
+from typing import Generator
 
 load_dotenv()
 
@@ -108,3 +109,34 @@ Answer:"""
         "answer": response.content,
         "sources":sources
     }
+
+
+def query_stream(index:FAISS,question:str,k:int=5)-> Generator:
+    retriever=index.as_retriever(search_kwargs={"k":k})
+    relevant_chunks=retriever.invoke(question)
+
+    context="\n\n".join([
+        f"[Source:{doc.metadata['source']},Page {doc.metadata['page']}]\n{doc.page_content}"
+        for doc in relevant_chunks
+    ])
+
+    prompt = f"""You are a research assistant. Answer the question based ONLY on the context provided below.
+For every claim you make, mention the page number it came from.
+If the answer is not in the context, say "I could not find this in the provided papers."
+
+Context:
+{context}
+
+Question:{question}
+Answer:"""
+    
+    for chunk in llm.stream(prompt):
+        if chunk.content:
+            yield chunk.content
+
+    sources=list(set([
+        f"{doc.metadata['source']} - Page {doc.metadata['page']}"
+        for doc in relevant_chunks
+    ]))
+    import json
+    yield f"\n__SOURCES__{json.dumps(sources)}"

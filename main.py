@@ -4,7 +4,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.requests import Request
 from pydantic import BaseModel
-from rag import build_index, query, save_index, load_index
+from rag import build_index, query, save_index, load_index,query_stream
+from fastapi.responses import StreamingResponse
 
 app=FastAPI()
 
@@ -57,7 +58,9 @@ def  answer_question(data:QueryRequest):
             detail="No papers indexed yet.Please index papers first."
         )
     try:
-        result=query(index_store["index"],data.question)
-        return result
+        return StreamingResponse(
+            query_stream(index_store["index"],data.question),
+            media_type="text/plain"
+        )
     except Exception as e:
         raise HTTPException(status_code=500,detail=str(e))
