@@ -124,9 +124,11 @@ def query(index:FAISS,chunks:list,question:str,k:int=5)->dict:
         for doc in relevant_chunks
     ])
 
-    prompt=f"""You are a research assistant.Answer the question based ONLY on the context provided below.
+    prompt = f"""You are a research assistant. Answer the question based ONLY on the context provided below.
 For every claim you make, mention the page number it came from.
-If the answer is not in the context,say "I could not find this in the provided papers."
+If the context only partially addresses the question, clearly state what the context does say and explicitly note what it does not confirm.
+If the answer is not in the context at all, say "I could not find this in the provided papers."
+Do NOT present partial or ambiguous information as a definitive answer.
 
 Context:
 {context}
@@ -158,7 +160,9 @@ def query_stream(index:FAISS,chunks:list,question:str,k:int=5)-> Generator:
 
     prompt = f"""You are a research assistant. Answer the question based ONLY on the context provided below.
 For every claim you make, mention the page number it came from.
-If the answer is not in the context, say "I could not find this in the provided papers."
+If the context only partially addresses the question, clearly state what the context does say and explicitly note what it does not confirm.
+If the answer is not in the context at all, say "I could not find this in the provided papers."
+Do NOT present partial or ambiguous information as a definitive answer.
 
 Context:
 {context}
